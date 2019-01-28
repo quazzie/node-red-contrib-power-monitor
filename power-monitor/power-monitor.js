@@ -72,6 +72,9 @@
         // Holds the total energy for this cycle
         this.energy = 0;
 
+        // Holds the number of cycles left
+        this.cyclesleft = 0;
+     
         // Initial state
         this.status({fill: node.colors[node.state], shape:"dot"});
 
@@ -96,20 +99,29 @@
                     node.energy = 0;
                     node.count = 0;
                     node.state = 1;
+                    node.cyclesleft = Number(config.cycles || 1);
                 }
             }
-
+         
             // State machine - PRE-START
             if (1 === node.state) {
                 if (above) {
                     node.energy = node.energy + energy;
                     node.count = node.count + 1;
-                    if (node.count >= node.startafter) node.state = 2;
+                    if (node.count >= node.startafter) {
+                        node.cyclesleft -= 1;
+                        node.state = 2;
+                    }
                 } else {
-                    node.state = 0;
+                    if (node.cyclesleft > 1) {
+                        node.energy = node.energy + energy;
+                        node.count = 0;
+                    } else {
+                        node.state = 0;
+                    }
                 }
             }
-
+            
             // State machine - START
             if (2 === node.state) {
                 node.send([
@@ -137,7 +149,14 @@
                     node.state = 3;
                 } else {
                     node.count = node.count + 1;
-                    if (node.count >= node.stopafter) node.state = 5;
+                    if (node.count >= node.stopafter) {
+                        if (node.cyclesleft > 0) {
+                            node.cyclesleft -= 1;
+                            node.state = 1;
+                        } else {
+                            node.state = 5;
+                        }
+                    }
                 }
             }
 
